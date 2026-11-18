@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101a19">
+    <title>Хроники Пограничья</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Crimson+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="game.js" defer></script>
+  </head>
+  <body>
+    <main class="game-shell">
+      <canvas class="landscape" id="landscape" aria-hidden="true"></canvas>
+      <div class="scene-shade" aria-hidden="true"></div>
+
+      <section class="view menu-view" data-view="menu" aria-label="Главное меню">
+        <div class="menu-content">
+          <p class="overline" data-i18n="realm">ЗЕМЛИ НА ГРАНИ СУМЕРЕК</p>
+          <h1 class="game-title" data-i18n="title">ХРОНИКИ<br>ПОГРАНИЧЬЯ</h1>
+          <p class="tagline" data-i18n="tagline">Тактический автобатлер в мире легенд и стали</p>
+          <nav class="main-menu" aria-label="Главное меню">
+            <button class="menu-button" id="playButton" data-i18n="play">Играть</button>
+            <button class="menu-button" id="settingsButton" data-i18n="settings">Настройки</button>
+            <button class="menu-button menu-button--quiet" id="exitButton" data-i18n="exit">Выход</button>
+          </nav>
+        </div>
+      </section>
+
+      <section class="view character-view" data-view="character" aria-labelledby="createTitle" hidden>
+        <div class="character-builder">
+          <header class="builder-header">
+            <div>
+              <p class="overline" data-i18n="chapter">ПЕРВАЯ ГЛАВА</p>
+              <h2 id="createTitle" data-i18n="createTitle">Создание персонажа</h2>
+              <p class="builder-intro" data-i18n="createIntro">Выбери происхождение и путь. Характеристики назначаются автоматически.</p>
+            </div>
+            <button class="text-button builder-back" data-view-button="menu" data-i18n="back">Назад</button>
+          </header>
+
+          <div class="builder-grid">
+            <section class="choice-section" aria-labelledby="raceHeading">
+              <div class="section-heading">
+                <span class="step-number">01</span>
+                <h3 id="raceHeading" data-i18n="raceHeading">Происхождение</h3>
+              </div>
+              <div class="race-options" id="raceOptions" role="group" aria-labelledby="raceHeading"></div>
+            </section>
+
+            <section class="choice-section" aria-labelledby="classHeading">
+              <div class="section-heading">
+                <span class="step-number">02</span>
+                <h3 id="classHeading" data-i18n="classHeading">Класс</h3>
+              </div>
+              <div class="class-options" id="classOptions" role="group" aria-labelledby="classHeading"></div>
+            </section>
+
+            <aside class="character-preview" aria-live="polite">
+              <div class="builder-identity">
+                <canvas class="hero-portrait" id="builderPortrait" width="64" height="72" role="img" aria-label="Портрет персонажа"></canvas>
+                <div class="builder-name">
+                  <label class="name-setting" for="characterName" data-i18n="heroName">Имя героя</label>
+                  <input id="characterName" class="name-input" type="text" maxlength="24" autocomplete="off" value="Аэлрин">
+                  <h3 class="preview-build" id="previewBuild"></h3>
+                </div>
+              </div>
+              <div class="stats-heading">
+                <h4 data-i18n="attributes">Характеристики</h4>
+                <span data-i18n="fixedValues">база + класс</span>
+              </div>
+              <div class="stats-grid" id="statsGrid"></div>
+              <div class="trait-block">
+                <span class="trait-label" data-i18n="racialTrait">Особенность происхождения</span>
+                <strong id="racialTraitName"></strong>
+                <p id="racialTraitDescription"></p>
+              </div>
+              <div class="trait-block class-trait">
+                <span class="trait-label" data-i18n="classAbility">Способность класса</span>
+                <strong id="classAbilityName"></strong>
+                <p id="classAbilityDescription"></p>
+              </div>
+              <button class="create-button" id="createCharacterButton" data-i18n="createHero">Создать героя</button>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="view world-view" data-view="world" aria-labelledby="worldTitle" hidden>
+        <header class="world-header">
+          <div class="world-heading">
+            <p class="overline" data-i18n="chapter">ПЕРВАЯ ГЛАВА</p>
+            <h2 id="worldTitle" data-i18n="worldTitle">Окрестности Медного Брода</h2>
+            <p class="world-subtitle" id="worldSubtitle"></p>
+          </div>
+          <div class="world-clock">
+            <span class="day-counter" id="dayCounter"></span>
+            <button class="day-button" id="advanceDayButton" data-i18n="advanceDay">Следующий день</button>
+          </div>
+        </header>
+
+        <div class="world-notice" id="worldNotice" role="status" aria-live="polite" hidden></div>
+
+        <div class="world-layout">
+          <aside class="hero-sheet" aria-label="Лист персонажа">
+            <div class="hero-identity">
+              <canvas class="hero-portrait" id="heroPortrait" width="64" height="72" role="img" aria-label="Портрет персонажа"></canvas>
+              <div class="hero-heading">
+                <span class="hero-level" id="heroLevel"></span>
+                <h3 id="heroName"></h3>
+                <p id="heroBuild"></p>
+              </div>
+            </div>
+            <div class="hero-vitals">
+              <div class="vital-labels"><span data-i18n="health">Здоровье</span><strong id="healthValue"></strong></div>
+              <progress id="healthBar" max="100" value="100"></progress>
+              <div class="vital-labels experience-labels"><span data-i18n="experience">Опыт</span><span id="experienceValue"></span></div>
+              <progress class="experience-bar" id="experienceBar" max="100" value="0"></progress>
+              <div class="coin-line"><span data-i18n="coins">Монеты</span><strong id="coinValue"></strong></div>
+            </div>
+            <div class="world-stats-heading">
+              <h4 data-i18n="attributes">Характеристики</h4>
+              <span data-i18n="basePlusClass">база + класс</span>
+            </div>
+            <div class="stats-grid world-stats" id="worldStats"></div>
+            <section class="sheet-section">
+              <h4 data-i18n="equipment">Снаряжение</h4>
+              <ul class="equipment-list" id="equipmentList"></ul>
+            </section>
+            <section class="sheet-section condition-section">
+              <h4 data-i18n="conditions">Состояние</h4>
+              <div id="conditionList"></div>
+            </section>
+            <button class="text-button edit-build-button" data-view-button="character" data-i18n="editHero">Изменить героя</button>
+          </aside>
+
+          <section class="map-section" aria-labelledby="mapHeading">
+            <div class="map-section-heading">
+              <div>
+                <p class="overline" data-i18n="worldMap">КАРТА ОКРЕСТНОСТЕЙ</p>
+                <h3 id="mapHeading" data-i18n="regionName">Пограничье</h3>
+              </div>
+              <span class="map-scale" data-i18n="mapScale">СЕВЕРНЫЙ ТРАКТ</span>
+            </div>
+            <div class="region-map" id="regionMap" role="group" aria-label="Карта с точками интереса">
+              <svg class="map-art" viewBox="0 0 1000 650" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <pattern id="mapHatch" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(28)">
+                    <path d="M 0 0 L 0 18" stroke="#b6a879" stroke-opacity=".12" stroke-width="2" />
+                  </pattern>
+                  <linearGradient id="mapWash" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#40544a" />
+                    <stop offset="1" stop-color="#273c36" />
+                  </linearGradient>
+                </defs>
+                <rect width="1000" height="650" fill="url(#mapWash)" />
+                <rect width="1000" height="650" fill="url(#mapHatch)" />
+                <path class="map-forest" d="M0 0h220l45 86-47 80 37 97-76 64 18 105-83 58 22 160H0zM1000 0H820l-28 97 55 66-29 86 72 60-33 104 79 74-25 163h89z" />
+                <path class="map-contour" d="M130 116c119-97 230-53 340-78s211 3 365 34M104 169c140-77 240-38 350-61s221 9 376 43M179 227c110-48 188-26 287-43s216 10 332 34M109 500c137-74 260-42 364-64s192 12 343 37M146 552c137-51 250-23 348-43s197 8 299 27" />
+                <path class="map-river" d="M624-20C594 61 703 89 658 158s-3 100-69 161-39 97 15 139 28 97 80 212" />
+                <path class="map-road" d="M157 478C286 423 367 485 459 403s148-90 205-103 119-86 220-84" />
+                <path class="map-road map-road-secondary" d="M157 478c85-110 142-176 214-235s112-70 193-91" />
+                <g class="map-label" aria-hidden="true">
+                  <text x="80" y="370" data-i18n="mapLabelPines">СОСНОВЫЙ ЛЕС</text>
+                  <text x="724" y="442" data-i18n="mapLabelMarsh">НИЗИННЫЕ БОЛОТА</text>
+                  <text x="742" y="100" data-i18n="mapLabelRidge">КАМЕННЫЙ КРЯЖ</text>
+                </g>
+              </svg>
+              <button class="map-location" data-location="city" style="--x: 16%; --y: 74%">
+                <span class="map-marker map-marker--city" aria-hidden="true"></span>
+                <span class="map-location-name" data-i18n="siteCity">Медный Брод</span>
+                <span class="map-location-state" data-i18n="currentLocation">Вы здесь</span>
+              </button>
+              <button class="map-location" data-location="slime-field" style="--x: 47%; --y: 57%">
+                <span class="map-marker map-marker--slime" aria-hidden="true"></span>
+                <span class="map-location-name" data-i18n="siteSlime">Поле слизи</span>
+                <span class="map-location-state"></span>
+              </button>
+              <button class="map-location" data-location="goblin-cave" style="--x: 69%; --y: 45%">
+                <span class="map-marker map-marker--goblin" aria-hidden="true"></span>
+                <span class="map-location-name" data-i18n="siteGoblins">Пещера гоблинов</span>
+                <span class="map-location-state"></span>
+              </button>
+              <button class="map-location" data-location="kobold-den" style="--x: 39%; --y: 23%">
+                <span class="map-marker map-marker--kobold" aria-hidden="true"></span>
+                <span class="map-location-name" data-i18n="siteKobolds">Нора кобольдов</span>
+                <span class="map-location-state"></span>
+              </button>
+              <button class="map-location" data-location="wolf-den" style="--x: 26%; --y: 45%">
+                <span class="map-marker map-marker--wolf" aria-hidden="true"></span>
+                <span class="map-location-name" data-i18n="siteWolves">Волчья чаща</span>
+                <span class="map-location-state"></span>
+              </button>
+              <button class="map-location" data-location="bandit-camp" style="--x: 86%; --y: 82%">
+                <span class="map-marker map-marker--bandit" aria-hidden="true"></span>
+                <span class="map-location-name" data-i18n="siteBandits">Лагерь налётчиков</span>
+                <span class="map-location-state"></span>
+              </button>
+              <button class="map-location" data-location="sunken-shrine" style="--x: 86%; --y: 28%">
+                <span class="map-marker map-marker--shrine" aria-hidden="true"></span>
+                <span class="map-location-name" data-i18n="siteShrine">Затопленное святилище</span>
+                <span class="map-location-state"></span>
+              </button>
+              <span class="map-compass" aria-hidden="true">N</span>
+            </div>
+            <div class="map-legend">
+              <span><i class="legend-dot legend-dot--open"></i><span data-i18n="available">Доступно</span></span>
+              <span><i class="legend-dot legend-dot--locked"></i><span data-i18n="levelLocked">Закрыто по уровню</span></span>
+            </div>
+          </section>
+
+          <aside class="location-panel" aria-live="polite" aria-labelledby="locationTitle">
+            <p class="overline" data-i18n="selectedLocation">ВЫБРАННОЕ МЕСТО</p>
+            <span class="location-recommendation" id="locationRecommendation"></span>
+            <h3 id="locationTitle"></h3>
+            <p class="location-description" id="locationDescription"></p>
+            <div class="enemy-section">
+              <h4 data-i18n="threats">Замеченные противники</h4>
+              <div id="enemyRoster" class="enemy-roster"></div>
+            </div>
+            <p class="encounter-note" data-i18n="battleIntro">Враги идут волнами. В каждом раунде герой действует первым.</p>
+            <button class="create-button enter-location-button" id="enterLocationButton" data-i18n="enterArea" disabled>Войти в область</button>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view town-view" data-view="town" aria-labelledby="townTitle" hidden>
+        <header class="town-header">
+          <div>
+            <p class="overline" data-i18n="townLocation">МЕДНЫЙ БРОД · ГОРОДСКИЕ ВОРОТА</p>
+            <h2 id="townTitle" data-i18n="townName">Медный Брод</h2>
+            <p class="town-intro" data-i18n="townIntro">Найди работу, снаряжение и ночлег перед следующей вылазкой.</p>
+          </div>
+          <div class="town-header-actions">
+            <span class="town-purse"><span data-i18n="coins">Монеты</span> <strong id="townCoins">3</strong></span>
+            <button class="text-button" id="townMapButton" data-i18n="returnToMap">Вернуться на карту</button>
+          </div>
+        </header>
+
+        <div class="town-notice" id="townNotice" role="status" aria-live="polite" hidden></div>
+
+        <div class="town-layout">
+          <section class="town-services" aria-labelledby="servicesHeading">
+            <p class="overline" data-i18n="cityServices">ГОРОДСКИЕ УСЛУГИ</p>
+            <h3 id="servicesHeading" data-i18n="servicesHeading">Передышка и учёба</h3>
+            <div class="town-service">
+              <div>
+                <h4 data-i18n="innTitle">Ночлег в конюшне</h4>
+                <p data-i18n="innDescription">Восстанови здоровье и сними состояние «Без крова».</p>
+              </div>
+              <button class="service-button" id="innButton"><span data-i18n="rentBed">Снять место</span><strong>5 <span data-i18n="coinsShort">медяков</span></strong></button>
+            </div>
+            <div class="town-service">
+              <div>
+                <h4 data-i18n="trainingTitle">Занятия у старого сержанта</h4>
+                <p data-i18n="trainingDescription">Получи опыт за тренировку. Нужны время и плата.</p>
+              </div>
+              <button class="service-button" id="trainingButton"><span data-i18n="train">Тренироваться</span><strong>12 <span data-i18n="coinsShort">медяков</span></strong></button>
+            </div>
+            <div class="town-hero-summary">
+              <span class="town-level" id="townHeroLevel"></span>
+              <strong id="townHeroName"></strong>
+              <span id="townHeroBuild"></span>
+              <div class="town-xp-line"><span data-i18n="experience">Опыт</span><strong id="townExperience"></strong></div>
+              <progress id="townExperienceBar" max="100" value="0"></progress>
+            </div>
+          </section>
+
+          <section class="town-shop" aria-labelledby="shopHeading">
+            <p class="overline" data-i18n="townMarket">РЫНОК У ГОРОДСКИХ ВОРОТ</p>
+            <h3 id="shopHeading" data-i18n="shopHeading">Лавка снаряжения</h3>
+            <div class="shop-list" id="townShop"></div>
+          </section>
+
+          <section class="town-inventory" aria-labelledby="inventoryHeading">
+            <p class="overline" data-i18n="heroBelongings">ИМУЩЕСТВО ГЕРОЯ</p>
+            <h3 id="inventoryHeading" data-i18n="inventoryHeading">Инвентарь</h3>
+            <div class="inventory-list" id="townInventory"></div>
+          </section>
+
+          <section class="town-contracts" aria-labelledby="contractHeading">
+            <p class="overline" data-i18n="contractBoard">ДОСКА ГОРОДСКИХ ПОРУЧЕНИЙ</p>
+            <h3 id="contractHeading" data-i18n="contractHeading">Контракты</h3>
+            <div class="contract-list" id="townContracts"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view combat-view" data-view="combat" aria-labelledby="combatTitle" hidden>
+        <header class="combat-header">
+          <div>
+            <p class="overline" data-i18n="combatEncounter">СТОЛКНОВЕНИЕ</p>
+            <h2 id="combatTitle"></h2>
+          </div>
+          <div class="combat-round" id="combatRound"></div>
+        </header>
+
+        <div class="combat-arena">
+          <article class="combatant combatant--hero">
+            <p class="combatant-side" data-i18n="yourHero">ВАШ ГЕРОЙ</p>
+            <canvas class="combat-portrait" id="combatHeroPortrait" width="64" height="72" role="img" aria-label="Портрет героя"></canvas>
+            <h3 id="combatHeroName"></h3>
+            <p class="combatant-build" id="combatHeroBuild"></p>
+            <div class="combat-health-labels"><span data-i18n="health">Здоровье</span><strong id="combatHeroHealth"></strong></div>
+            <progress class="combat-health" id="combatHeroHealthBar" max="100" value="100"></progress>
+            <div class="combat-defense"><span data-i18n="armorClass">Защита</span><strong id="combatHeroDefense"></strong></div>
+          </article>
+
+          <div class="combat-center">
+            <span class="versus-mark" aria-hidden="true">VS</span>
+            <div class="d20-display" id="d20Display" aria-live="polite" aria-label="Бросок двадцатигранного кубика">
+              <span class="d20-result" id="d20Result">20</span>
+              <span class="d20-label">D20</span>
+            </div>
+            <p class="roll-summary" id="rollSummary" data-i18n="rollPrompt">Бросок появится после действия</p>
+          </div>
+
+          <article class="combatant combatant--enemy">
+            <p class="combatant-side" data-i18n="enemy">ПРОТИВНИК</p>
+            <canvas class="combat-portrait enemy-portrait" id="enemyPortrait" width="64" height="72" role="img" aria-label="Портрет противника"></canvas>
+            <h3 id="enemyName"></h3>
+            <p class="combatant-build" id="enemyNumber"></p>
+            <div class="combat-health-labels"><span data-i18n="health">Здоровье</span><strong id="enemyHealth"></strong></div>
+            <progress class="combat-health enemy-health" id="enemyHealthBar" max="100" value="100"></progress>
+            <div class="combat-defense"><span data-i18n="armorClass">Защита</span><strong id="enemyDefense"></strong></div>
+          </article>
+        </div>
+
+        <div class="combat-actions" id="combatActions">
+          <button class="combat-action combat-action--attack" id="attackButton" data-i18n="attack">Атаковать</button>
+          <button class="combat-action combat-action--ability" id="abilityButton"></button>
+          <p class="ability-hint" id="abilityHint"></p>
+        </div>
+
+        <section class="combat-log-section" aria-labelledby="combatLogTitle">
+          <h3 id="combatLogTitle" data-i18n="battleLog">Ход боя</h3>
+          <ol class="combat-log" id="combatLog" aria-live="polite"></ol>
+        </section>
+
+        <section class="combat-result" id="combatResult" hidden aria-live="polite">
+          <p class="overline" id="combatResultEyebrow"></p>
+          <h2 id="combatResultTitle"></h2>
+          <p id="combatResultDescription"></p>
+          <div class="combat-result-actions">
+            <button class="text-button" id="returnFromCombatButton" data-i18n="returnToMap">Вернуться на карту</button>
+            <button class="text-button" id="restartGameButton" data-i18n="restartGame">Начать игру заново</button>
+          </div>
+        </section>
+      </section>
+
+      <dialog class="event-dialog" id="eventDialog" aria-labelledby="eventTitle">
+        <div class="event-panel">
+          <p class="overline" id="eventDayLabel"></p>
+          <h2 id="eventTitle"></h2>
+          <p class="event-description" id="eventDescription"></p>
+          <div class="event-choices" id="eventChoices"></div>
+        </div>
+      </dialog>
+
+      <section class="view message-view" data-view="exit" hidden>
+        <p class="overline" data-i18n="farewell">ДО СЛЕДУЮЩЕЙ ВСТРЕЧИ</p>
+        <h2 data-i18n="exitTitle">Путешествие поставлено на паузу</h2>
+        <p class="message-copy" data-i18n="exitCopy">Чтобы выйти из игры, закройте эту вкладку.</p>
+        <button class="text-button" data-view-button="menu" data-i18n="back">Вернуться в меню</button>
+      </section>
+
+      <footer class="menu-footer">
+        <span class="version" data-i18n="version">ВЕРСИЯ 0.1.0</span>
+        <div class="language-switch" role="group" aria-label="Language / Язык">
+          <button type="button" class="language-button is-active" data-language="ru" aria-pressed="true">RU</button>
+          <button type="button" class="language-button" data-language="en" aria-pressed="false">EN</button>
+        </div>
+      </footer>
+    </main>
+
+    <dialog class="settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+      <form method="dialog" class="settings-panel">
+        <p class="overline" data-i18n="options">ПАРАМЕТРЫ ИГРЫ</p>
+        <h2 id="settingsTitle" data-i18n="settings">Настройки</h2>
+        <label class="setting-row">
+          <span data-i18n="music">Музыка</span>
+          <input id="musicEnabled" type="checkbox" checked>
+        </label>
+        <label class="volume-setting" for="musicVolume">
+          <span><span data-i18n="volume">Громкость</span><output id="volumeValue">35%</output></span>
+          <input id="musicVolume" type="range" min="0" max="100" value="35">
+        </label>
+        <p class="credit-line">
+          <span data-i18n="musicCredit">Музыка: «Medieval Dream» — Frank Schröter</span><br>
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" data-i18n="license">Лицензия CC BY 4.0</a>
+        </p>
+        <button class="text-button dialog-close" value="close" data-i18n="close">Готово</button>
+      </form>
+    </dialog>
+
+    <audio id="themeMusic" src="medieval-theme.ogg" loop preload="auto"></audio>
+  </body>
+</html>
